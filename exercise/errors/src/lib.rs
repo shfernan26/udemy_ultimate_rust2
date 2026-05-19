@@ -16,6 +16,19 @@
 
 // pub enum DolphinError...
 
+use thiserror::Error;
+
+#[non_exhaustive]
+#[derive(Debug, Error)]
+pub enum DolphinError {
+    #[error("The dolphin is hungry")]
+    Hungry,
+    #[error("The dolphin is too young")]
+    TooYoung,
+    #[error("The dolphin's name is too long and annoying to say")]
+    LongName,
+}
+
 pub struct Dolphin {
     pub name: String,
     pub age: u8,
