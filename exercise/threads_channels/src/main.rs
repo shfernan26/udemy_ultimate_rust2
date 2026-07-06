@@ -1,11 +1,20 @@
 // Silence some warnings so they don't distract from the exercise.
 #![allow(dead_code, unused_imports, unused_variables)]
 use crossbeam::channel;
+use crossbeam::channel::Receiver;
 use std::thread;
 use std::time::Duration;
 
 fn sleep_ms(ms: u64) {
     thread::sleep(Duration::from_millis(ms));
+}
+
+fn my_random_function(name:&str, requests: Receiver<i32>){
+    sleep_ms(500);
+    for num in requests {
+        println!("{} recieves the random num {}", name, num);
+    }
+    
 }
 
 fn expensive_sum(v: Vec<i32>) -> i32 {
@@ -16,29 +25,29 @@ fn expensive_sum(v: Vec<i32>) -> i32 {
 }
 
 fn main() {
-    let my_vector = vec![2, 5, 1, 0, 4, 3];
+    // let my_vector = vec![2, 5, 1, 0, 4, 3];
 
-    // 1. Spawn a child thread and have it call `expensive_sum(my_vector)`. Store the returned
-    // join handle in a variable called `handle`. Once you've done this you should be able to run
-    // the code and see the output from the child thread's expensive sum in the middle of the main
-    // thread's processing of letters.
-    //
-    //let handle = ...
+    // // 1. Spawn a child thread and have it call `expensive_sum(my_vector)`. Store the returned
+    // // join handle in a variable called `handle`. Once you've done this you should be able to run
+    // // the code and see the output from the child thread's expensive sum in the middle of the main
+    // // thread's processing of letters.
+    // //
+    // let handle = thread::spawn(|| expensive_sum(my_vector));
 
-    // While the child thread is running, the main thread will also do some work
-    for letter in vec!["a", "b", "c", "d", "e", "f"] {
-        println!("Main thread: Processing the letter '{}'", letter);
-        sleep_ms(200);
-    }
+    // // While the child thread is running, the main thread will also do some work
+    // for letter in vec!["a", "b", "c", "d", "e", "f"] {
+    //     println!("Main thread: Processing the letter '{}'", letter);
+    //     sleep_ms(200);
+    // }
 
-    // 2. Let's retrieve the value returned by the child thread once it has exited.
-    // - Uncomment and complete the code below.
-    // - Call the .join() method on `handle` from #1 and assign the `Result<i32, Err>` it returns
-    // to a variable named `result`
-    // - Get the i32 out of `result` and store it in a `sum` variable.
+    // // 2. Let's retrieve the value returned by the child thread once it has exited.
+    // // - Uncomment and complete the code below.
+    // // - Call the .join() method on `handle` from #1 and assign the `Result<i32, Err>` it returns
+    // // to a variable named `result`
+    // // - Get the i32 out of `result` and store it in a `sum` variable.
 
-    // let result =
-    // let sum =
+    // let result = handle.join();
+    // let sum = result.unwrap();
     // println!("The child thread's expensive sum is {}", sum);
 
     // 3. Time for some fun with channels!
@@ -47,7 +56,7 @@ fn main() {
     // unbounded channel. Hint: An unbounded channel can be created with `channel::unbounded()`
 
     /*
-        // let ...
+        let (tx, rx) = channel::unbounded();
 
         // Cloning a channel makes another variable connected to that end of the channel so that you can
         // send it to another thread. We want another variable that can be used for sending...
@@ -62,7 +71,7 @@ fn main() {
 
         // Thread A
         let handle_a = thread::spawn(move || {
-            sleep_ms(0);
+            sleep_ms(500);
             tx2.send("Thread A: 1").unwrap();
             sleep_ms(200);
             tx2.send("Thread A: 2").unwrap();
@@ -88,12 +97,30 @@ fn main() {
 
         // 5. Oops, we forgot to join "Thread A" and "Thread B". That's bad hygiene!
         // - Use the thread handles to join both threads without getting any compiler warnings.
+        handle_a.join().unwrap();
+        handle_b.join().unwrap();
     */
-
     // Challenge: Make two child threads and give them each a receiving end to a channel. From the
     // main thread loop through several values and print each out and then send it to the channel.
     // On the child threads print out the values you receive. Close the sending side in the main
     // thread by calling `drop(tx)` (assuming you named your sender channel variable `tx`). Join
     // the child threads.
+
+    let (tx, rx) = channel::unbounded();
+    let rx2 = rx.clone();
+
+    let a_handle = thread::spawn(|| my_random_function("a handle", rx));
+    let b_handle = thread::spawn(|| my_random_function("b handle", rx2));
+
+    let random_nums = vec![20, 30, 60, 85];
+    for num in random_nums {
+        println!("Sending num: {} ", num);
+        let _ = tx.send(num);
+    }
+    drop(tx);
+
+    a_handle.join().unwrap();
+    b_handle.join().unwrap();
+
     println!("Main thread: Exiting.")
 }
